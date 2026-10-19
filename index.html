@@ -47,6 +47,21 @@ main{flex:1;max-width:1400px;margin:0 auto;padding:0 22px 40px;width:100%}
 .btn{border:0;border-radius:10px;height:42px;padding:0 18px;font-weight:700;background:var(--navy2);color:#fff;border:1px solid #ffffff33}.btn.pri{background:var(--yel);color:#111;border:0}
 canvas{width:100%;border-radius:10px;display:block}
 .more{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:28px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:var(--navy2);border:1px solid #ffffff1a;border-radius:14px;padding:10px;margin-top:12px}
+.acts .grp{display:flex;gap:8px;flex-wrap:wrap}
+.ab{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:999px;border:1px solid #ffffff26;background:#ffffff0d;color:#fff;font-weight:700;font-size:15px;transition:transform .12s,background .15s,border-color .15s}
+.ab:hover{background:#ffffff1f;transform:translateY(-1px)}.ab:active{transform:scale(.95)}
+.ab .i{font-size:18px;transition:transform .25s}.ab.on .i{transform:scale(1.25)}
+.ab.like.on{background:#e11d2a;border-color:#e11d2a}.ab.dis.on{background:#475569;border-color:#475569}
+.ab.save.on{background:var(--yel);color:#111;border-color:var(--yel)}.ab.fs{background:var(--blue);border-color:var(--blue)}
+.ab.icon{width:44px;padding:0;justify-content:center}
+.stage:fullscreen{align-items:center;background:#0a1438;border-radius:0}
+.stage:fullscreen .box{max-width:min(92vh,720px)!important}
+.pop{position:relative}.share{position:absolute;bottom:52px;right:0;background:#fff;color:#111;border-radius:14px;box-shadow:0 12px 30px #0007;padding:8px;min-width:200px;display:none;z-index:10}
+.share button{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;padding:10px 12px;border-radius:8px;font-weight:600;text-align:left}.share button:hover{background:#eef2ff}
+#toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,40px);opacity:0;background:#fff;color:#111;font-weight:700;padding:12px 20px;border-radius:999px;box-shadow:0 10px 30px #0008;transition:.25s;z-index:99;pointer-events:none}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+.heart{position:absolute;right:10px;top:10px;font-size:20px;filter:drop-shadow(0 2px 3px #0008)}
 footer{text-align:center;color:var(--dim);font-size:13px;padding:24px;border-top:1px solid #ffffff1a}
 </style></head><body>
 <header><div class="hd">
@@ -55,7 +70,7 @@ footer{text-align:center;color:var(--dim);font-size:13px;padding:24px;border-top
 <button class="hb" id="catb">☰ Categories<div class="menu" id="menu"></div></button></div>
 </div></header>
 <main id="app"></main>
-<footer>Free browser games · no downloads · scores saved on this device</footer>
+<div id="toast"></div><footer>Free browser games · no downloads · scores saved on this device</footer>
 <script>
 const $=s=>document.querySelector(s);
 const best=id=>localStorage.getItem('ug-'+id);
@@ -74,11 +89,35 @@ let cleanup=()=>{},cat='All';
 const card=g=>'<a class="card" href="#/play/'+g.id+'"><div class="th" style="background:linear-gradient(135deg,'+g.g+')">'+g.e+'<div class="nm">'+g.t+'</div><div class="bd">'+(g.nw?'<span class="bdg n">NEW</span>':'')+(g.tr?'<span class="bdg t">TRENDING</span>':'')+'</div></div><div class="ct">'+g.t+(best(g.id)!==null?'<div style="font-size:11px;color:#1a56db;font-weight:500">🏆 '+g.bl+': '+best(g.id)+'</div>':'')+'</div></a>';
 const row=(id,title,sub,list)=>'<div class="sec"><div class="sh"><div><h2>'+title+'</h2><p>'+sub+'</p></div><div class="arr"><button data-r="'+id+'" data-d="-1">←</button><button data-r="'+id+'" data-d="1">→</button></div></div><div class="row" id="'+id+'">'+list.map(card).join('')+'</div></div>';
 function home(){const app=$('#app');const list=GAMES.filter(g=>cat==='All'||g.c===cat);
-app.innerHTML='<div class="hero">Play games instantly!</div>'+(cat==='All'?row('tr','Trending Now','Most played right now',GAMES.filter(g=>g.tr))+row('nw','New Games','Fresh additions to the library',GAMES.filter(g=>g.nw)):'<div class="sh"><h2>'+cat+' games</h2></div>')+'<div class="count">'+list.length+' games shown</div><div class="grid">'+list.map(card).join('')+'</div>';
+app.innerHTML='<div class="hero">Play games instantly!</div>'+(cat==='All'?(saved().length?row('sv','❤️ Saved Games','Your favourites, saved on this device',GAMES.filter(g=>saved().includes(g.id))):'')+row('tr','Trending Now','Most played right now',GAMES.filter(g=>g.tr))+row('nw','New Games','Fresh additions to the library',GAMES.filter(g=>g.nw)):'<div class="sh"><h2>'+cat+' games</h2></div>')+'<div class="count">'+list.length+' games shown</div><div class="grid">'+list.map(card).join('')+'</div>';
 document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{$('#'+b.dataset.r).scrollLeft+=b.dataset.d*700})}
-function play(id){const g=GAMES.find(x=>x.id===id);if(!g)return home();
-$('#app').innerHTML='<div class="play-top"><a class="btn" style="display:grid;place-items:center" href="#/">← Back</a><h1>'+g.e+' '+g.t+'</h1><div style="display:flex;gap:8px"><button class="btn" id="rs">↻ Restart</button><button class="btn pri" id="fs">⛶ Fullscreen</button></div></div><p class="ctl">Controls: '+g.k+'</p><div class="stage" id="stage"><div class="box" id="box"></div></div><div class="sh" style="margin-top:28px"><h2>More games</h2></div><div class="more">'+GAMES.filter(x=>x.id!==id).slice(0,6).map(card).join('')+'</div>';
-const run=()=>{cleanup();$('#box').removeAttribute('style');cleanup=G[id]($('#box'))||(()=>{})};run();$('#rs').onclick=run;$('#fs').onclick=()=>$('#stage').requestFullscreen&&$('#stage').requestFullscreen()}
+const LS=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}};
+const saved=()=>LS('ug-saved',[]);const likes=()=>LS('ug-likes',{});
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2200)};
+function play(id){const g=GAMES.find(x=>x.id===id);if(!g)return home();const url=location.href;
+$('#app').innerHTML='<div class="play-top"><a class="btn" style="display:grid;place-items:center" href="#/">← Back</a><h1>'+g.e+' '+g.t+'</h1><span class="ctl" style="margin:0">'+g.c+'</span></div><p class="ctl">Controls: '+g.k+' · Press <b>F</b> for fullscreen</p><div class="stage" id="stage"><div class="box" id="box"></div></div>'+
+'<div class="acts"><div class="grp"><button class="ab like" id="lk"><span class="i">👍</span><span>Like</span></button><button class="ab dis" id="dl"><span class="i">👎</span></button><button class="ab save" id="sv"><span class="i">❤️</span><span id="svt">Save</span></button>'+
+'<div class="pop"><button class="ab" id="sh"><span class="i">🔗</span><span>Share</span></button><div class="share" id="shm"><button data-s="copy">📋 Copy link</button><button data-s="native">📤 Share…</button><button data-s="x">𝕏 Post on X</button><button data-s="wa">💬 WhatsApp</button><button data-s="mail">✉️ Email</button></div></div></div>'+
+'<div class="grp"><button class="ab icon" id="rs" title="Restart">↻</button><a class="ab icon" title="Report a problem" target="_blank" href="https://github.com/idkwhattouseasausername/unblocked-games/issues/new?title='+encodeURIComponent('Problem with '+g.t)+'">⚠️</a><button class="ab fs" id="fs"><span class="i">⛶</span><span>Fullscreen</span></button></div></div>'+
+'<div class="sh" style="margin-top:28px"><h2>More games</h2></div><div class="more">'+GAMES.filter(x=>x.id!==id).slice(0,6).map(card).join('')+'</div>';
+const paint=()=>{const v=likes()[id];$('#lk').classList.toggle('on',v===1);$('#dl').classList.toggle('on',v===-1);const s=saved().includes(id);$('#sv').classList.toggle('on',s);$('#svt').textContent=s?'Saved':'Save'};
+const vote=n=>{const l=likes();l[id]=l[id]===n?0:n;localStorage.setItem('ug-likes',JSON.stringify(l));paint();if(l[id]===1)toast('👍 Thanks for the like!');if(l[id]===-1)toast('Got it — we\'ll show you other games')};
+$('#lk').onclick=()=>vote(1);$('#dl').onclick=()=>vote(-1);
+$('#sv').onclick=()=>{let s=saved();const on=s.includes(id);s=on?s.filter(x=>x!==id):[id,...s];localStorage.setItem('ug-saved',JSON.stringify(s));paint();toast(on?'Removed from Saved':'❤️ Saved — find it on the home page')};
+const fs=()=>{const st=$('#stage');document.fullscreenElement?document.exitFullscreen():st.requestFullscreen&&st.requestFullscreen()};$('#fs').onclick=fs;
+const fk=e=>{if((e.key==='f'||e.key==='F')&&e.target!==q)fs()};addEventListener('keydown',fk);
+const fc=()=>{const b=$('#fs');if(b)b.lastChild.textContent=document.fullscreenElement?'Exit':'Fullscreen'};document.addEventListener('fullscreenchange',fc);
+$('#sh').onclick=e=>{e.stopPropagation();const m=$('#shm');m.style.display=m.style.display==='block'?'none':'block'};
+const copy=()=>navigator.clipboard.writeText(url).then(()=>toast('🔗 Link copied!'),()=>toast('Couldn\'t copy — copy it from the address bar'));
+$('#shm').onclick=e=>{const s=e.target.closest('[data-s]');if(!s)return;const t='Play '+g.t+' free in your browser!';$('#shm').style.display='none';
+({copy,native:()=>navigator.share?navigator.share({title:g.t,text:t,url}).catch(()=>{}):copy(),
+x:()=>open('https://twitter.com/intent/tweet?text='+encodeURIComponent(t)+'&url='+encodeURIComponent(url)),
+wa:()=>open('https://wa.me/?text='+encodeURIComponent(t+' '+url)),
+mail:()=>open('mailto:?subject='+encodeURIComponent(g.t)+'&body='+encodeURIComponent(t+' '+url))})[s.dataset.s]()};
+const close=e=>{if(!e.target.closest('.pop')&&$('#shm'))$('#shm').style.display='none'};document.addEventListener('click',close);
+paint();const run=()=>{cleanup();$('#box').removeAttribute('style');cleanup=G[id]($('#box'))||(()=>{})};run();$('#rs').onclick=()=>{run();toast('↻ Restarted')};
+const inner=cleanup;cleanup=()=>{inner();removeEventListener('keydown',fk);document.removeEventListener('fullscreenchange',fc);document.removeEventListener('click',close)};
+const rr=run;$('#rs').onclick=()=>{cleanup();rr();toast('↻ Restarted');const i2=cleanup;cleanup=()=>{i2();removeEventListener('keydown',fk);document.removeEventListener('fullscreenchange',fc);document.removeEventListener('click',close)};addEventListener('keydown',fk);document.addEventListener('fullscreenchange',fc);document.addEventListener('click',close)}}
 // header controls
 const q=$('#q'),sg=$('#sugg');
 q.oninput=()=>{const v=q.value.trim().toLowerCase();$('#qx').style.display=v?'block':'none';const l=GAMES.filter(g=>g.t.toLowerCase().includes(v));
