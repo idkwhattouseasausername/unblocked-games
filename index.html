@@ -96,19 +96,29 @@ GAMES.push(
 {id:'simon',t:'Simon Says',c:'Casual',e:'🟢',g:'#22c55e,#7c3aed',k:'Repeat the pattern',bl:'Best round'},
 {id:'reaction',t:'Reaction Test',c:'Skill',e:'⚡',g:'#facc15,#b91c1c',k:'Click when it turns green',bl:'Fastest (ms)'},
 {id:'typing',t:'Type Racer',c:'Skill',e:'⌨️',g:'#64748b,#0f172a',k:'Type the words',bl:'Best WPM'});
+GAMES.forEach(g=>g.tr=0);
+const NS='idkwhattouseasausername-ubg',API='https://abacus.jasoncameron.dev';let STATS={},ptT;
+const score=id=>{const s=STATS[id]||{c:0,p:0};return s.c+s.p*2};
+const loadStats=async()=>{try{const c=JSON.parse(sessionStorage.getItem('ug-stats')||'null');if(c&&Date.now()-c.t<60000){STATS=c.s}else{
+const r=await Promise.all(GAMES.map(g=>Promise.all(['clk','pt'].map(k=>fetch(API+'/get/'+NS+'/'+k+'-'+g.id).then(x=>x.ok?x.json():{value:0}).then(j=>j.value||0).catch(()=>0)))));
+GAMES.forEach((g,i)=>STATS[g.id]={c:r[i][0],p:r[i][1]});sessionStorage.setItem('ug-stats',JSON.stringify({t:Date.now(),s:STATS}))}
+const top=GAMES.filter(g=>score(g.id)>0).sort((a,b)=>score(b.id)-score(a.id)).slice(0,5).map(g=>g.id);GAMES.forEach(g=>g.tr=top.includes(g.id)?1:0);
+if(!location.hash.startsWith('#/play'))home()}catch(e){}};
+const hit=k=>fetch(API+'/hit/'+NS+'/'+k).catch(()=>{});
+const fmtPlays=id=>{const s=STATS[id];if(!s)return'';const m=Math.round(s.p/2);return s.c+' plays'+(m?' · '+(m>=60?(m/60).toFixed(1)+'h':m+'m')+' played':'')};
 const ICON={All:'🎮',Arcade:'🕹️',Puzzle:'🧩',Strategy:'♟️',Sports:'🏓',Action:'💥',Casual:'🎈',Skill:'🎯'};
 const CATS=['All',...new Set(GAMES.map(g=>g.c))];
 let cleanup=()=>{},cat='All';
 const card=g=>'<a class="card" href="#/play/'+g.id+'"><div class="th" style="background:linear-gradient(135deg,'+g.g+')">'+g.e+'<div class="nm">'+g.t+'</div><div class="bd">'+(g.nw?'<span class="bdg n">NEW</span>':'')+(g.tr?'<span class="bdg t">TRENDING</span>':'')+'</div></div><div class="ct">'+g.t+(best(g.id)!==null?'<div style="font-size:11px;color:#1a56db;font-weight:500">🏆 '+g.bl+': '+best(g.id)+'</div>':'')+'</div></a>';
 const row=(id,title,sub,list)=>'<div class="sec"><div class="sh"><div><h2>'+title+'</h2><p>'+sub+'</p></div><div class="arr"><button data-r="'+id+'" data-d="-1">←</button><button data-r="'+id+'" data-d="1">→</button></div></div><div class="row" id="'+id+'">'+list.map(card).join('')+'</div></div>';
 function home(){const app=$('#app');const list=GAMES.filter(g=>cat==='All'||g.c===cat);
-app.innerHTML='<div class="hero">Play games instantly!</div><div class="chips">'+CATS.map(c=>'<button class="cc '+(c===cat?'on':'')+'" data-cc="'+c+'">'+(ICON[c]||'🎮')+' '+c+' <small>'+(c==='All'?GAMES.length:GAMES.filter(g=>g.c===c).length)+'</small></button>').join('')+'</div>'+(cat==='All'?(saved().length?row('sv','❤️ Saved Games','Your favourites, saved on this device',GAMES.filter(g=>saved().includes(g.id))):'')+row('tr','Trending Now','Most played right now',GAMES.filter(g=>g.tr))+row('nw','New Games','Fresh additions to the library',GAMES.filter(g=>g.nw)):'<div class="sh"><h2>'+cat+' games</h2></div>')+'<div class="count">'+list.length+' games shown</div><div class="grid">'+list.map(card).join('')+'</div>';
+app.innerHTML='<div class="hero">Play games instantly!</div><div class="chips">'+CATS.map(c=>'<button class="cc '+(c===cat?'on':'')+'" data-cc="'+c+'">'+(ICON[c]||'🎮')+' '+c+' <small>'+(c==='All'?GAMES.length:GAMES.filter(g=>g.c===c).length)+'</small></button>').join('')+'</div>'+(cat==='All'?(saved().length?row('sv','❤️ Saved Games','Your favourites, saved on this device',GAMES.filter(g=>saved().includes(g.id))):'')+(GAMES.some(g=>score(g.id)>0)?row('tr','🔥 Trending Now','Most clicks & playtime across all players',GAMES.filter(g=>score(g.id)>0).sort((a,b)=>score(b.id)-score(a.id)).slice(0,10)):'')+row('nw','New Games','Fresh additions to the library',GAMES.filter(g=>g.nw)):'<div class="sh"><h2>'+cat+' games</h2></div>')+'<div class="count">'+list.length+' games shown</div><div class="grid">'+list.map(card).join('')+'</div>';
 document.querySelectorAll('[data-cc]').forEach(b=>b.onclick=()=>{cat=b.dataset.cc;home()});document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{$('#'+b.dataset.r).scrollLeft+=b.dataset.d*700})}
 const LS=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}};
 const saved=()=>LS('ug-saved',[]);const likes=()=>LS('ug-likes',{});
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2200)};
-function play(id){const g=GAMES.find(x=>x.id===id);if(!g)return home();const url=location.href;
-$('#app').innerHTML='<div class="play-top"><a class="btn" style="display:grid;place-items:center" href="#/">← Back</a><h1>'+g.e+' '+g.t+'</h1><span class="ctl" style="margin:0">'+g.c+'</span></div><p class="ctl">Controls: '+g.k+' · Press <b>F</b> for fullscreen</p><div class="stage" id="stage"><div class="box" id="box"></div></div>'+
+function play(id){const g=GAMES.find(x=>x.id===id);if(!g)return home();hit('clk-'+id);clearInterval(ptT);ptT=setInterval(()=>{if(!document.hidden)hit('pt-'+id)},30000);sessionStorage.removeItem('ug-stats');const url=location.href;
+$('#app').innerHTML='<div class="play-top"><a class="btn" style="display:grid;place-items:center" href="#/">← Back</a><h1>'+g.e+' '+g.t+'</h1><span class="ctl" style="margin:0">'+g.c+(STATS[id]?' · '+fmtPlays(id):'')+'</span></div><p class="ctl">Controls: '+g.k+' · Press <b>F</b> for fullscreen</p><div class="stage" id="stage"><div class="box" id="box"></div></div>'+
 '<div class="acts"><div class="grp"><button class="ab like" id="lk"><span class="i">👍</span><span>Like</span></button><button class="ab dis" id="dl"><span class="i">👎</span></button><button class="ab save" id="sv"><span class="i">❤️</span><span id="svt">Save</span></button>'+
 '<div class="pop"><button class="ab" id="sh"><span class="i">🔗</span><span>Share</span></button><div class="share" id="shm"><button data-s="copy">📋 Copy link</button><button data-s="native">📤 Share…</button><button data-s="x">𝕏 Post on X</button><button data-s="wa">💬 WhatsApp</button><button data-s="mail">✉️ Email</button></div></div></div>'+
 '<div class="grp"><button class="ab icon" id="rs" title="Restart">↻</button><a class="ab icon" title="Report a problem" target="_blank" href="https://github.com/idkwhattouseasausername/unblocked-games/issues/new?title='+encodeURIComponent('Problem with '+g.t)+'">⚠️</a><button class="ab fs" id="fs"><span class="i">⛶</span><span>Fullscreen</span></button></div></div>'+
@@ -319,6 +329,6 @@ const reset=()=>{words=Array.from({length:200},()=>WORDS[Math.random()*WORDS.len
 $('#ti').oninput=e=>{const v=e.target.value;if(!started){started=true;ti=setInterval(()=>{time--;$('#tm').textContent='⏱ '+time+'s';$('#sc').textContent=Math.round(ok/((30-time)/60||1));
 if(time<=0){clearInterval(ti);$('#ti').disabled=true;const wpm=ok*2;$('#sc').textContent=wpm;save('typing',wpm);$('#m').innerHTML='<p>'+wpm+' WPM!</p><button class="btn pri" id="go">Try again</button>';$('#go').onclick=reset}},1000)}
 if(v.endsWith(' ')){if(v.trim()===words[i])ok++;i++;e.target.value='';draw()}};reset();setTimeout(()=>$('#ti').focus(),50);return()=>clearInterval(ti)}};
-const route=()=>{cleanup();cleanup=()=>{};sg.style.display='none';const m=location.hash.match(/^#\/play\/(.+)$/);m?play(m[1]):home();scrollTo(0,0)};
-addEventListener('hashchange',route);route();
+const route=()=>{clearInterval(ptT);cleanup();cleanup=()=>{};sg.style.display='none';const m=location.hash.match(/^#\/play\/(.+)$/);m?play(m[1]):home();scrollTo(0,0)};
+addEventListener('hashchange',route);route();loadStats();
 </script></body></html>
