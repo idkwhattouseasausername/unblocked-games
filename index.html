@@ -65,6 +65,10 @@ canvas{width:100%;border-radius:10px;display:block}
 .chips{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;margin:-10px 0 30px;padding:4px 2px}.chips::-webkit-scrollbar{display:none}
 .cc{flex:0 0 auto;display:flex;align-items:center;gap:8px;height:46px;padding:0 18px;border-radius:999px;background:var(--navy2);border:1px solid #ffffff22;color:#fff;font-weight:700;font-size:15px;transition:.15s}
 .cc:hover{border-color:var(--yel)}.cc.on{background:var(--yel);color:#111;border-color:var(--yel)}.cc small{opacity:.6;font-weight:500}
+.th{overflow:hidden}.th::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 20%,#ffffff55,transparent 55%),repeating-linear-gradient(45deg,#ffffff0d 0 10px,transparent 10px 20px)}
+.th::after{content:"";position:absolute;left:0;right:0;bottom:0;height:55%;background:linear-gradient(transparent,#0008)}
+.th .em{position:relative;z-index:1;font-size:72px;filter:drop-shadow(0 8px 10px #0006);transition:transform .25s;margin-bottom:22px}
+.card:hover .em{transform:scale(1.18) rotate(-6deg)}.th .nm,.th .bd,.th .heart{z-index:2}
 footer{text-align:center;color:var(--dim);font-size:13px;padding:24px;border-top:1px solid #ffffff1a}
 </style></head><body>
 <header><div class="hd">
@@ -109,7 +113,7 @@ const fmtPlays=id=>{const s=STATS[id];if(!s)return'';const m=Math.round(s.p/2);r
 const ICON={All:'🎮',Arcade:'🕹️',Puzzle:'🧩',Strategy:'♟️',Sports:'🏓',Action:'💥',Casual:'🎈',Skill:'🎯'};
 const CATS=['All',...new Set(GAMES.map(g=>g.c))];
 let cleanup=()=>{},cat='All';
-const card=g=>'<a class="card" href="#/play/'+g.id+'"><div class="th" style="background:linear-gradient(135deg,'+g.g+')">'+g.e+'<div class="nm">'+g.t+'</div><div class="bd">'+(g.nw?'<span class="bdg n">NEW</span>':'')+(g.tr?'<span class="bdg t">TRENDING</span>':'')+'</div></div><div class="ct">'+g.t+(best(g.id)!==null?'<div style="font-size:11px;color:#1a56db;font-weight:500">🏆 '+g.bl+': '+best(g.id)+'</div>':'')+'</div></a>';
+const card=g=>'<a class="card" href="#/play/'+g.id+'"><div class="th" style="background:linear-gradient(135deg,'+g.g+')"><span class="em">'+g.e+'</span>'+(saved().includes(g.id)?'<span class="heart">❤️</span>':'')+'<div class="nm">'+g.t+'</div><div class="bd">'+(g.nw?'<span class="bdg n">NEW</span>':'')+(g.tr?'<span class="bdg t">TRENDING</span>':'')+'</div></div><div class="ct">'+g.t+(best(g.id)!==null?'<div style="font-size:11px;color:#1a56db;font-weight:500">🏆 '+g.bl+': '+best(g.id)+'</div>':'')+'</div></a>';
 const row=(id,title,sub,list)=>'<div class="sec"><div class="sh"><div><h2>'+title+'</h2><p>'+sub+'</p></div><div class="arr"><button data-r="'+id+'" data-d="-1">←</button><button data-r="'+id+'" data-d="1">→</button></div></div><div class="row" id="'+id+'">'+list.map(card).join('')+'</div></div>';
 function home(){const app=$('#app');const list=GAMES.filter(g=>cat==='All'||g.c===cat);
 app.innerHTML='<div class="hero">Play games instantly!</div><div class="chips">'+CATS.map(c=>'<button class="cc '+(c===cat?'on':'')+'" data-cc="'+c+'">'+(ICON[c]||'🎮')+' '+c+' <small>'+(c==='All'?GAMES.length:GAMES.filter(g=>g.c===c).length)+'</small></button>').join('')+'</div>'+(cat==='All'?(saved().length?row('sv','❤️ Saved Games','Your favourites, saved on this device',GAMES.filter(g=>saved().includes(g.id))):'')+(GAMES.some(g=>score(g.id)>0)?row('tr','🔥 Trending Now','Most clicks & playtime across all players',GAMES.filter(g=>score(g.id)>0).sort((a,b)=>score(b.id)-score(a.id)).slice(0,10)):'')+row('nw','New Games','Fresh additions to the library',GAMES.filter(g=>g.nw)):'<div class="sh"><h2>'+cat+' games</h2></div>')+'<div class="count">'+list.length+' games shown</div><div class="grid">'+list.map(card).join('')+'</div>';
@@ -195,7 +199,7 @@ box.innerHTML='<div class="hud"><span>Moves: <b id="mv"></b></span><span>Best: '
 const render=()=>{$('#mv').textContent=moves;$('#bd').innerHTML=cards.map((v,i)=>{const s=open.includes(i)||done.has(i);return'<button class="cell" data-i="'+i+'" style="font-size:34px;border-radius:10px;opacity:'+(done.has(i)?.5:1)+';background:'+(s?'#1e3a8a':'linear-gradient(135deg,#1a56db,#facc15)')+'">'+(s?v:'')+'</button>'}).join('');
 document.querySelectorAll('#bd .cell').forEach(b=>b.onclick=()=>flip(+b.dataset.i));
 $('#m').innerHTML=done.size===16?'<p>Done in '+moves+' moves 🎉</p><button class="btn pri" id="go">Play again</button>':'';if($('#go'))$('#go').onclick=()=>{reset();render()}};
-const flip=i=>{if(lock||open.includes(i)||done.has(i))return;open.push(i);if(open.length===2){moves++;if(cards[open[0]]===cards[open[1]]){done.add(open[0]);done.add(open[1]);open=[];if(done.size===16)save('memory',moves,true)}else{lock=true;setTimeout(()=>{open=[];lock=false;render()},700)}}render()};render()},
+const flip=i=>{if(lock||open.includes(i)||done.has(i))return;open.push(i);if(open.length===2){moves++;if(cards[open[0]]===cards[open[1]]){done.add(open[0]);done.add(open[1]);open=[];if(done.size===16)save('memory',moves,true)}else{lock=true;setTimeout(()=>{if(!$('#mv'))return;open=[];lock=false;render()},700)}}render()};render()},
 ttt(box){let b=Array(9).fill(null),T={w:0,d:0,l:0};const LN=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 const win=b=>{for(const[a,c,d]of LN)if(b[a]&&b[a]===b[c]&&b[a]===b[d])return b[a];return b.every(Boolean)?'draw':null};
 const mm=(b,me)=>{const w=win(b);if(w==='O')return 1;if(w==='X')return -1;if(w)return 0;const s=[];b.forEach((v,i)=>{if(!v){const n=b.slice();n[i]=me?'O':'X';s.push(mm(n,!me))}});return me?Math.max(...s):Math.min(...s)};
@@ -301,7 +305,7 @@ const end=m=>{done=true;$('#m').innerHTML='<p>'+m+'</p><button class="btn pri" i
 const draw=()=>{$('#st').textContent=done?'':turn===1?'Your turn':'CPU…';$('#bd').innerHTML=b.flatMap((r,i)=>r.map((v,c)=>'<button class="cell" data-c="'+c+'" style="border-radius:50%;background:'+(v===1?'#ef4444':v===2?'#facc15':'#0a1438')+'"></button>')).join('');
 document.querySelectorAll('#bd .cell').forEach(e=>e.onclick=()=>mv(+e.dataset.c))};
 const mv=c=>{if(done||turn!==1||b[0][c])return;drop(b,c,1);if(win(b,1)){localStorage.setItem('ug-c4',(+best('c4')||0)+1);draw();return end('You win! 🎉')}if(!valid(b).length){draw();return end('Draw')}turn=2;draw();
-setTimeout(()=>{drop(b,bot(),2);turn=1;draw();if(win(b,2))end('CPU wins 🤖');else if(!valid(b).length)end('Draw')},450)};
+setTimeout(()=>{if(!$('#st'))return;drop(b,bot(),2);turn=1;draw();if(win(b,2))end('CPU wins 🤖');else if(!valid(b).length)end('Draw')},450)};
 const reset=()=>{b=Array.from({length:R},()=>Array(C).fill(0));turn=1;done=false;$('#m').innerHTML='';draw()};reset()},
 whack(box){let sc,time,hole,ti,mt;box.innerHTML='<div class="hud"><span>Score: <b id="sc">0</b></span><span id="tm"></span><span>Best: '+(best('whack')||0)+'</span></div><div id="bd" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"></div><div class="msg" id="m"></div>';
 const draw=()=>{$('#bd').innerHTML=[...Array(9).keys()].map(i=>'<button class="cell" data-i="'+i+'" style="border-radius:50%;font-size:48px;background:radial-gradient(#3f2a14 55%,#14532d 57%)">'+(i===hole?'🐹':'')+'</button>').join('');
